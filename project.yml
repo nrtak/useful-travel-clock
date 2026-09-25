@@ -13,6 +13,8 @@ settings:
     TARGETED_DEVICE_FAMILY: "1"
     DEVELOPMENT_TEAM: ""
     CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
 
 targets:
   UsefulTravelClock:
@@ -63,6 +65,18 @@ targets:
         com.apple.security.application-groups:
           - group.com.usefultravelclock.app
 
+  UsefulTravelClockTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - Tests
+    dependencies:
+      - target: UsefulTravelClock
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.usefultravelclock.tests
+
 schemes:
   UsefulTravelClock:
     build:
@@ -71,5 +85,9 @@ schemes:
         UsefulTravelClockWidget: all
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - UsefulTravelClockTests
     archive:
       config: Release
