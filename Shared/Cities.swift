@@ -163,3 +163,6 @@ let cities: [City] = [
 let defaultCityIDs: [String] = ["nyc", "lon", "mil", "tyo", "mel"]
 
 let popularCityIDs: [String] = ["nyc", "lax", "sfo", "chi", "lon", "par", "ber", "ams", "dxb", "sin", "tyo", "hkg", "sel", "syd", "mel", "tor", "sao", "bom"]
+
+// Alias avoids shadowing by the widget entry's cities(upTo:) method.
+let cityCatalog = cities

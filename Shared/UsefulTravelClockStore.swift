@@ -2,13 +2,14 @@
 
 import SwiftUI
 import Combine
+import WidgetKit
 
-enum ThemeMode: String, CaseIterable, Identifiable {
+enum ThemeMode: String, CaseIterable, Identifiable, Codable {
     case light, dark, system
     var id: String { rawValue }
 }
 
-enum HomeMode: String, CaseIterable, Identifiable {
+enum HomeMode: String, CaseIterable, Identifiable, Codable {
     case automatic, manual
     var id: String { rawValue }
 }
@@ -19,7 +20,7 @@ enum HomeMode: String, CaseIterable, Identifiable {
 final class UsefulTravelClockStore: ObservableObject {
 
     /// App Group identifier — must match the one configured on both targets in Xcode.
-    static let appGroupID = "group.com.usefultravelclock.app"
+    nonisolated static let appGroupID = "group.com.usefultravelclock.app"
 
     static let maxCities = 10
 
@@ -34,17 +35,14 @@ final class UsefulTravelClockStore: ObservableObject {
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults? = nil) {
-        self.defaults = defaults ?? UserDefaults(suiteName: UsefulTravelClockStore.appGroupID) ?? .standard
-        cityIDs = decode([String].self, key: "usefultravelclock-cities") ?? defaultCityIDs
-        theme = ThemeMode(rawValue: decode(String.self, key: "usefultravelclock-theme") ?? "") ?? .light
-        homeMode = HomeMode(rawValue: decode(String.self, key: "usefultravelclock-home-mode") ?? "") ?? .automatic
-        homeCityID = decode(String.self, key: "usefultravelclock-home-city") ?? (defaultCityIDs.first ?? "nyc")
-        cityIDs = Array(cityIDs.prefix(Self.maxCities))
-    }
-
-    private func decode<T: Decodable>(_ type: T.Type, key: String) -> T? {
-        guard let data = defaults.data(forKey: key) else { return nil }
-        return try? JSONDecoder().decode(T.self, from: data)
+        let storage = defaults ?? .usefultravelclockShared
+        self.defaults = storage
+        let savedIDs = storage.data(forKey: "usefultravelclock-cities")
+            .flatMap { try? JSONDecoder().decode([String].self, from: $0) } ?? defaultCityIDs
+        cityIDs = Array(savedIDs.prefix(Self.maxCities))
+        theme = ThemeMode(rawValue: storage.string(forKey: "usefultravelclock-theme") ?? "") ?? .light
+        homeMode = HomeMode(rawValue: storage.string(forKey: "usefultravelclock-home-mode") ?? "") ?? .automatic
+        homeCityID = storage.string(forKey: "usefultravelclock-home-city") ?? (defaultCityIDs.first ?? "nyc")
     }
 
     private func persist() {
@@ -54,6 +52,7 @@ final class UsefulTravelClockStore: ObservableObject {
         defaults.set(theme.rawValue, forKey: "usefultravelclock-theme")
         defaults.set(homeMode.rawValue, forKey: "usefultravelclock-home-mode")
         defaults.set(homeCityID, forKey: "usefultravelclock-home-city")
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     // MARK: Derived
