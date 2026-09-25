@@ -187,7 +187,8 @@ struct WidgetAnalogClock: View {
             let c = CGPoint(x: size.width / 2, y: size.height / 2)
             let radius = 20 * scale
 
-            let face = Circle().inset(by: size.width / 2 - radius)
+            let face = Path(ellipseIn: CGRect(x: c.x - radius, y: c.y - radius,
+                                             width: radius * 2, height: radius * 2))
             context.fill(face, with: .color(accent.opacity(0.1)))
             context.stroke(face, with: .color(accent.opacity(0.45)), lineWidth: scale)
 

@@ -24,7 +24,7 @@ extension UsefulTravelClockEntry {
     var homeZone: String { homeTimeZoneID }
 
     func cities(upTo count: Int) -> [City] {
-        cityIDs.prefix(count).compactMap { id in allCities.first { $0.id == id } }
+        cityIDs.prefix(count).compactMap { id in CitySearch.city(withID: id, in: cityCatalog) }
     }
 }
 
@@ -41,23 +41,12 @@ struct UsefulTravelClockProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<UsefulTravelClockEntry>) -> Void) {
-        let shared = UserDefaults.usefultravelclockShared
-        var ids = defaultCityIDs
-        if let data = shared.data(forKey: "usefultravelclock-cities"),
-           let decoded = try? JSONDecoder().decode([String].self, from: data), !decoded.isEmpty {
-            ids = decoded
-        }
-        let home = shared.string(forKey: "usefultravelclock-home-mode") == "manual"
-            ? (shared.string(forKey: "usefultravelclock-home-city") ?? defaultCityIDs.first ?? "nyc")
-                .flatMap { id in allCities.first { $0.id == id } }?.timeZoneID ?? TimeZone.current.identifier
-            : TimeZone.current.identifier
-
         // One entry per minute for the next hour, then refresh.
         var entries: [UsefulTravelClockEntry] = []
-        let start = Date()
+        let start = Calendar.current.dateInterval(of: .minute, for: Date())?.start ?? Date()
         for minute in 0..<60 {
             let at = start.addingTimeInterval(TimeInterval(minute * 60))
-            entries.append(entry(for: at, fallbackIDs: ids, homeOverride: home))
+            entries.append(entry(for: at, fallbackIDs: defaultCityIDs))
         }
         completion(Timeline(entries: entries, policy: .atEnd))
     }
@@ -66,15 +55,15 @@ struct UsefulTravelClockProvider: TimelineProvider {
         let shared = UserDefaults.usefultravelclockShared
         var ids = fallbackIDs
         if let data = shared.data(forKey: "usefultravelclock-cities"),
-           let decoded = try? JSONDecoder().decode([String].self, from: data), !decoded.isEmpty {
+           let decoded = try? JSONDecoder().decode([String].self, from: data) {
             ids = decoded
         }
         let home: String
         if let homeOverride {
             home = homeOverride
         } else if shared.string(forKey: "usefultravelclock-home-mode") == "manual" {
-            home = (shared.string(forKey: "usefultravelclock-home-city") ?? defaultCityIDs.first ?? "nyc")
-                .flatMap { id in allCities.first { $0.id == id } }?.timeZoneID ?? TimeZone.current.identifier
+            let id = shared.string(forKey: "usefultravelclock-home-city") ?? defaultCityIDs.first ?? "nyc"
+            home = CitySearch.city(withID: id, in: cityCatalog)?.timeZoneID ?? TimeZone.current.identifier
         } else {
             home = TimeZone.current.identifier
         }
